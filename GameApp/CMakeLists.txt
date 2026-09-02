@@ -5,6 +5,10 @@ set(CROSSWORD_PUZZLE_GAME_SOURCES
 	Source/App.h
 	Source/Frame.cpp
 	Source/Frame.h
+	Source/Canvas.cpp
+	Source/Canvas.h
+	Source/Puzzle.cpp
+	Source/Puzzle.h
 )
 
 add_executable(CrossWordPuzzleGame WIN32
