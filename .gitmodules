@@ -1,0 +1,12 @@
+[submodule "Dependencies/FontSystem"]
+	path = Dependencies/FontSystem
+	url = https://github.com/spencerparkin/FontSystem.git
+[submodule "Dependencies/HappyMath"]
+	path = Dependencies/HappyMath
+	url = https://github.com/spencerparkin/HappyMath.git
+[submodule "Dependencies/wxWidgets"]
+	path = Dependencies/wxWidgets
+	url = https://github.com/wxWidgets/wxWidgets.git
+[submodule "Dependencies/CrossWordPuzzleGenerator"]
+	path = Dependencies/CrossWordPuzzleGenerator
+	url = https://github.com/spencerparkin/CrossWordPuzzleGenerator.git
