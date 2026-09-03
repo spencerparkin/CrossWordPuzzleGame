@@ -237,6 +237,30 @@ void Puzzle::Render(FontSys::System* fontSystem) const
 	}
 
 	glEnd();
+
+	fontSystem->SetLineHeight(0.8f);
+
+	for (int row = 0; row < numRows; row++)
+	{
+		for (int col = 0; col < numCols; col++)
+		{
+			unsigned char letter = this->userMatrix.GetLetter(row, col);
+
+			if (letter == CROSSWORD_ALWAYS_BLANK || letter == CROSSWORD_LETTER_UNKNOWN)
+				continue;
+
+			std::string text;
+			text += letter;
+
+			GLfloat length = 0.0f;
+			fontSystem->CalcTextLength(text, length);
+
+			float x = float(col) + (1.0f - length) / 2.0f;
+			float y = -float(row + 1) + 0.1f;
+
+			fontSystem->RenderText(x, y, text, true);
+		}
+	}
 }
 
 void Puzzle::ShowSolution()

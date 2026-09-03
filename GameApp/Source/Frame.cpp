@@ -6,7 +6,7 @@
 #include <wx/aboutdlg.h>
 #include <wx/msgdlg.h>
 
-Frame::Frame(const wxSize& size) : wxFrame(nullptr, wxID_ANY, "Cross-World Puzzle Game", wxDefaultPosition, size)
+Frame::Frame(const wxSize& size) : wxFrame(nullptr, wxID_ANY, "Crossword Puzzle Game", wxDefaultPosition, size)
 {
 	wxMenu* puzzleMenu = new wxMenu();
 	puzzleMenu->Append(new wxMenuItem(puzzleMenu, ID_NewPuzzle, wxT("New Puzzle"), wxT("Generate a new cross-word puzzle.")));
