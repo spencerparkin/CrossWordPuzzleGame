@@ -2,6 +2,7 @@
 #include "App.h"
 #include "CrossWord/Random.h"
 #include "CrossWord/PuzzleGenerator.h"
+#include "JsonValue.h"
 #include <wx/busycursor.h>
 
 Puzzle::Params::Params()
@@ -40,10 +41,141 @@ bool Puzzle::Regenerate(const Params& params)
 
 	this->Reset();
 
-	// STPTODO: Make HTTP requests to get word definitions.
+	// Note that we do not generate the word-hint map here.
+	// It is generated later as the puzzle is being used.
+	// In part, this is done in an effort to overcome rate-limits
+	// with free dictionary APIs.
+
+#if 0
+	// STPTODO: How can we make sure that this puzzle class instance stays in scope as long as the requests are in flight?
+	for (int i = 0; i < (int)this->wordLocationArray.size(); i++)
+	{
+		const CrossWord::WordLocation& location = this->wordLocationArray[i];
+		std::string word = this->solvedMatrix.GetWordAt(location);
+
+		//wxString url = "https://api.quickpronounce.site/v1/dictionary/" + word;
+		wxString url = "https://en.wiktionary.org/api/rest_v1/page/definition/" + word;
+		
+		wxWebRequest request = wxWebSession::GetDefault().CreateRequest(this, url, i);
+		if (!request.IsOk())
+			continue;
+
+		request.SetMethod("GET");
+		request.SetHeader("Accept", "application/json");
+		request.Start();
+
+		WordHintRequest hintRequest;
+		hintRequest.request = request;
+		hintRequest.word = word;
+
+		this->requestHintArray.push_back(hintRequest);
+	}
+#endif
 
 	return true;
 }
+
+bool Puzzle::GetWordHint(const std::string& word, std::string& hint) const
+{
+	auto pair = this->wordHintMap.find(word);
+	if (pair == this->wordHintMap.end())
+		return false;
+
+	hint = pair->second;
+	return true;
+}
+
+void Puzzle::SetWordHint(const std::string& word, const std::string& hint)
+{
+	this->wordHintMap.erase(word);
+	this->wordHintMap.insert(std::pair(word, hint));
+}
+
+bool Puzzle::SetWordHintFromJson(const std::string& word, const std::string& jsonText)
+{
+	using namespace ParseParty;
+
+	try
+	{
+		std::string parseError;
+		std::shared_ptr<JsonObject> jsonRoot = std::dynamic_pointer_cast<JsonObject>(JsonValue::ParseJson(jsonText, parseError));
+		if (!jsonRoot.get())
+			return false;
+
+		std::shared_ptr<JsonArray> jsonEnglishArray = jsonRoot->GetValueOrThrow<JsonArray>("en");
+
+		std::string hint;
+
+		for (int i = 0; i < (int)jsonEnglishArray->GetSize(); i++)
+		{
+			std::shared_ptr<JsonObject> jsonEntry = jsonEnglishArray->GetValueOrThrow<JsonObject>(i);
+
+			std::shared_ptr<JsonArray> jsonDefArray = jsonEntry->GetValueOrThrow<JsonArray>("definitions");
+
+			if (jsonDefArray->GetSize() > 0)
+			{
+				std::shared_ptr<JsonObject> jsonDef = jsonDefArray->GetValueOrThrow<JsonObject>(0);
+
+				hint = jsonDef->GetValueOrThrow<JsonString>("definition")->GetValue();
+			}
+		}
+
+		this->SetWordHint(word, hint);
+	}
+	catch (JsonException jsonExc)
+	{
+		wxLogError(jsonExc.errorMsg);
+		return false;
+	}
+
+	return true;
+}
+
+#if 0
+void Puzzle::OnWebRequestState(wxWebRequestEvent& event)
+{
+	switch (event.GetState())
+	{
+		case wxWebRequest::State::State_Completed:
+		{
+			wxWebResponse response = event.GetRequest().GetResponse();
+			if (response.GetStatus() == 200 /* OK */)
+			{
+				WordHintRequest& hintRequest = this->requestHintArray[event.GetId()];
+
+				std::string jsonResponse = response.AsString().ToStdString();
+				this->CaptureWordHint(hintRequest.word, jsonResponse);
+			}
+
+			break;
+		}
+		case wxWebRequest::State::State_Failed:
+		{
+			wxString error = event.GetErrorDescription();
+			wxLogError(error);
+			break;
+		}
+		case wxWebRequest::State::State_Idle:
+		{
+			break;
+		}
+		case wxWebRequest::State::State_Unauthorized:
+		{
+			wxLogError("Unauthorized!");
+			break;
+		}
+		case wxWebRequest::State::State_Active:
+		{
+			break;
+		}
+		case wxWebRequest::State::State_Cancelled:
+		{
+			wxLogError("Canceled!");
+			break;
+		}
+	}
+}
+#endif
 
 void Puzzle::GetWorldRect(HappyMath::Rectangle& worldRect) const
 {

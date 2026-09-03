@@ -29,7 +29,9 @@ target_link_libraries(CrossWordPuzzleGame PRIVATE
 	CrossWordPuzzleGenerator
 	HappyMath
 	FontSystem
+	ParseParty
 	wx::core
 	wx::base
 	wx::gl
+	wx::net
 )

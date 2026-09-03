@@ -10,3 +10,6 @@
 [submodule "Dependencies/CrossWordPuzzleGenerator"]
 	path = Dependencies/CrossWordPuzzleGenerator
 	url = https://github.com/spencerparkin/CrossWordPuzzleGenerator.git
+[submodule "Dependencies/ParseParty"]
+	path = Dependencies/ParseParty
+	url = https://github.com/spencerparkin/ParseParty.git
