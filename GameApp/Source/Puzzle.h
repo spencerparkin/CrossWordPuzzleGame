@@ -29,9 +29,6 @@ public:
 	void Render(FontSys::System* fontSystem) const;
 	void ShowSolution();
 	void Reset();
-	bool GetWordHint(const std::string& word, std::string& hint) const;
-	void SetWordHint(const std::string& word, const std::string& hint);
-	bool SetWordHintFromJson(const std::string& word, const std::string& jsonText);
 
 	CrossWord::PuzzleMatrix userMatrix;
 	CrossWord::PuzzleMatrix solvedMatrix;

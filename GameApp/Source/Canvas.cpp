@@ -22,7 +22,6 @@ Canvas::Canvas(wxWindow* parent) : wxGLCanvas(parent, wxID_ANY, attributeList)
 	this->fontSystem.SetFont("OpenSans-Regular.ttf");
 
 	// STPTODO: Implement hover highlighting of word locations and ability to input letters.
-	// STPTODO: Implement word hint request queue that is processed at a throttle rate to try to appease API rate limits.
 }
 
 /*virtual*/ Canvas::~Canvas()

@@ -41,10 +41,10 @@ bool Puzzle::Regenerate(const Params& params)
 
 	this->Reset();
 
-	// Note that we do not generate the word-hint map here.
-	// It is generated later as the puzzle is being used.
-	// In part, this is done in an effort to overcome rate-limits
-	// with free dictionary APIs.
+	// https://freedictionaryapi.com/api/v1/entries/en/hello
+
+	// STPTODO: We need to not leave this function without filling out all word hints.
+	//          Actually, we should have the frame class do it since it's an event handler with guarenteed scope.
 
 #if 0
 	// STPTODO: How can we make sure that this puzzle class instance stays in scope as long as the requests are in flight?
@@ -55,7 +55,7 @@ bool Puzzle::Regenerate(const Params& params)
 
 		//wxString url = "https://api.quickpronounce.site/v1/dictionary/" + word;
 		wxString url = "https://en.wiktionary.org/api/rest_v1/page/definition/" + word;
-		
+
 		wxWebRequest request = wxWebSession::GetDefault().CreateRequest(this, url, i);
 		if (!request.IsOk())
 			continue;
@@ -71,62 +71,6 @@ bool Puzzle::Regenerate(const Params& params)
 		this->requestHintArray.push_back(hintRequest);
 	}
 #endif
-
-	return true;
-}
-
-bool Puzzle::GetWordHint(const std::string& word, std::string& hint) const
-{
-	auto pair = this->wordHintMap.find(word);
-	if (pair == this->wordHintMap.end())
-		return false;
-
-	hint = pair->second;
-	return true;
-}
-
-void Puzzle::SetWordHint(const std::string& word, const std::string& hint)
-{
-	this->wordHintMap.erase(word);
-	this->wordHintMap.insert(std::pair(word, hint));
-}
-
-bool Puzzle::SetWordHintFromJson(const std::string& word, const std::string& jsonText)
-{
-	using namespace ParseParty;
-
-	try
-	{
-		std::string parseError;
-		std::shared_ptr<JsonObject> jsonRoot = std::dynamic_pointer_cast<JsonObject>(JsonValue::ParseJson(jsonText, parseError));
-		if (!jsonRoot.get())
-			return false;
-
-		std::shared_ptr<JsonArray> jsonEnglishArray = jsonRoot->GetValueOrThrow<JsonArray>("en");
-
-		std::string hint;
-
-		for (int i = 0; i < (int)jsonEnglishArray->GetSize(); i++)
-		{
-			std::shared_ptr<JsonObject> jsonEntry = jsonEnglishArray->GetValueOrThrow<JsonObject>(i);
-
-			std::shared_ptr<JsonArray> jsonDefArray = jsonEntry->GetValueOrThrow<JsonArray>("definitions");
-
-			if (jsonDefArray->GetSize() > 0)
-			{
-				std::shared_ptr<JsonObject> jsonDef = jsonDefArray->GetValueOrThrow<JsonObject>(0);
-
-				hint = jsonDef->GetValueOrThrow<JsonString>("definition")->GetValue();
-			}
-		}
-
-		this->SetWordHint(word, hint);
-	}
-	catch (JsonException jsonExc)
-	{
-		wxLogError(jsonExc.errorMsg);
-		return false;
-	}
 
 	return true;
 }
