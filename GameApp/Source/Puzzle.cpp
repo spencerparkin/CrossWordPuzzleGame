@@ -43,6 +43,8 @@ bool Puzzle::Regenerate(const Params& params)
 
 	// https://freedictionaryapi.com/api/v1/entries/en/hello
 
+	// See "https://freedictionaryapi.com/" for rate limit info.
+
 	// STPTODO: We need to not leave this function without filling out all word hints.
 	//          Actually, we should have the frame class do it since it's an event handler with guarenteed scope.
 
