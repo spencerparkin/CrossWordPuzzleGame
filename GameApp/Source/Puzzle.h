@@ -3,6 +3,7 @@
 #include <wx/app.h>
 #include "CrossWord/PuzzleMatrix.h"
 #include "HappyMath/Rectangle.h"
+#include "HappyMath/Vector2.h"
 #include "FontSystem.h"
 #include <unordered_map>
 
@@ -29,6 +30,8 @@ public:
 	void Render(FontSys::System* fontSystem) const;
 	void ShowSolution();
 	void Reset();
+	bool GetWordLocation(const HappyMath::Vector2& worldPos, CrossWord::WordOrientation wordOrientation, CrossWord::WordLocation& wordLocation, HappyMath::Rectangle& wordRect) const;
+	static void LocationToRect(const CrossWord::Location& location, HappyMath::Rectangle& rect);
 
 	CrossWord::PuzzleMatrix userMatrix;
 	CrossWord::PuzzleMatrix solvedMatrix;

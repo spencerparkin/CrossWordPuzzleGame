@@ -134,6 +134,39 @@ void Puzzle::GetWorldRect(HappyMath::Rectangle& worldRect) const
 	worldRect.maxCorner.y = 0.0;
 }
 
+bool Puzzle::GetWordLocation(const HappyMath::Vector2& worldPos, CrossWord::WordOrientation wordOrientation, CrossWord::WordLocation& wordLocation, HappyMath::Rectangle& wordRect) const
+{
+	for (int i = 0; i < (int)this->wordLocationArray.size(); i++)
+	{
+		wordLocation = this->wordLocationArray[i];
+		if (wordLocation.orientation != wordOrientation)
+			continue;
+
+		wordRect.MakeInvalid();
+		for (int j = 0; j < wordLocation.length; j++)
+		{
+			CrossWord::Location location = wordLocation.GetLocationAt(j);
+			HappyMath::Rectangle letterRect;
+			LocationToRect(location, letterRect);
+			wordRect.ExpandToIncludeRect(letterRect);
+		}
+
+		if (wordRect.ContainsPoint(worldPos))
+			return true;
+	}
+
+	wordRect.MakeInvalid();
+	return false;
+}
+
+/*static*/ void Puzzle::LocationToRect(const CrossWord::Location& location, HappyMath::Rectangle& rect)
+{
+	rect.minCorner.x = double(location.col);
+	rect.maxCorner.x = double(location.col + 1);
+	rect.minCorner.y = -double(location.row + 1);
+	rect.maxCorner.y = -double(location.row);
+}
+
 void Puzzle::Render(FontSys::System* fontSystem) const
 {
 	int numRows = this->userMatrix.GetNumRows();
@@ -166,6 +199,8 @@ void Puzzle::Render(FontSys::System* fontSystem) const
 	}
 
 	glEnd();
+
+	glLineWidth(1.0f);
 
 	glBegin(GL_LINES);
 	glColor3f(0.0f, 0.0f, 0.0f);
