@@ -28,8 +28,11 @@ Frame::Frame(const wxSize& size) : wxFrame(nullptr, wxID_ANY, "Crossword Puzzle 
 
 	this->canvas = new Canvas(this);
 
+	this->hintText = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1, 200), wxTE_READONLY | wxTE_MULTILINE);
+
 	wxBoxSizer* boxSizer = new wxBoxSizer(wxVERTICAL);
 	boxSizer->Add(this->canvas, 1, wxGROW | wxALL, 0);
+	boxSizer->Add(this->hintText, 0, wxGROW | wxALL, 0);
 	this->SetSizer(boxSizer);
 
 	this->Bind(wxEVT_MENU, &Frame::OnNewPuzzle, this, ID_NewPuzzle);
@@ -108,4 +111,9 @@ void Frame::OnAbout(wxCommandEvent& event)
 	info.SetCopyright("(C) 2026 Spencer T. Parkin <spencer.parkin@proton.me>");
 
 	wxAboutBox(info);
+}
+
+void Frame::ShowWordHint(const std::string& hint)
+{
+	this->hintText->SetValue(hint);
 }

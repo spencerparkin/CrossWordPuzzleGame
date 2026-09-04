@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wx/frame.h>
+#include <wx/textctrl.h>
 
 class Canvas;
 
@@ -19,6 +20,8 @@ public:
 	Frame(const wxSize& size);
 	virtual ~Frame();
 
+	void ShowWordHint(const std::string& hint);
+
 private:
 	void OnNewPuzzle(wxCommandEvent& event);
 	void OnSolvePuzzle(wxCommandEvent& event);
@@ -28,4 +31,5 @@ private:
 	void OnUpdateUI(wxUpdateUIEvent& event);
 
 	Canvas* canvas;
+	wxTextCtrl* hintText;
 };

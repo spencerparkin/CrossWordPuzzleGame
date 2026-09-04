@@ -2,9 +2,11 @@
 
 #include <wx/glcanvas.h>
 #include <wx/timer.h>
+#include <wx/webrequest.h>
 #include "FontSystem.h"
 #include "HappyMath/Rectangle.h"
 #include "CrossWord/PuzzleMatrix.h"
+#include <map>
 
 class Canvas : public wxGLCanvas
 {
@@ -20,6 +22,9 @@ private:
 	void OnMouseWheel(wxMouseEvent& event);
 	void OnKeyDown(wxKeyEvent& event);
 	void OnTimer(wxTimerEvent& evnet);
+	void OnWebRequestState(wxWebRequestEvent& event);
+
+	bool ConstructWordHintFromJson(const std::string& jsonText, std::string& hint);
 
 	HappyMath::Vector2 MousePosToWorldPos(const wxPoint& mousePos) const;
 
@@ -37,4 +42,6 @@ private:
 	CrossWord::WordOrientation hoverOrienation;
 	CrossWord::WordLocation selectedLocation;
 	int letterIndex;
+	std::map<int, CrossWord::WordLocation> pendingWordHintMap;
+	int nextRequestId;
 };

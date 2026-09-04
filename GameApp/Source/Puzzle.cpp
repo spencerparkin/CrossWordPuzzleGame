@@ -2,7 +2,6 @@
 #include "App.h"
 #include "CrossWord/Random.h"
 #include "CrossWord/PuzzleGenerator.h"
-#include "JsonValue.h"
 #include <wx/busycursor.h>
 
 Puzzle::Params::Params()
@@ -41,87 +40,8 @@ bool Puzzle::Regenerate(const Params& params)
 
 	this->Reset();
 
-	// https://freedictionaryapi.com/api/v1/entries/en/hello
-
-	// See "https://freedictionaryapi.com/" for rate limit info.
-
-	// STPTODO: We need to not leave this function without filling out all word hints.
-	//          Actually, we should have the frame class do it since it's an event handler with guarenteed scope.
-
-#if 0
-	// STPTODO: How can we make sure that this puzzle class instance stays in scope as long as the requests are in flight?
-	for (int i = 0; i < (int)this->wordLocationArray.size(); i++)
-	{
-		const CrossWord::WordLocation& location = this->wordLocationArray[i];
-		std::string word = this->solvedMatrix.GetWordAt(location);
-
-		//wxString url = "https://api.quickpronounce.site/v1/dictionary/" + word;
-		wxString url = "https://en.wiktionary.org/api/rest_v1/page/definition/" + word;
-
-		wxWebRequest request = wxWebSession::GetDefault().CreateRequest(this, url, i);
-		if (!request.IsOk())
-			continue;
-
-		request.SetMethod("GET");
-		request.SetHeader("Accept", "application/json");
-		request.Start();
-
-		WordHintRequest hintRequest;
-		hintRequest.request = request;
-		hintRequest.word = word;
-
-		this->requestHintArray.push_back(hintRequest);
-	}
-#endif
-
 	return true;
 }
-
-#if 0
-void Puzzle::OnWebRequestState(wxWebRequestEvent& event)
-{
-	switch (event.GetState())
-	{
-		case wxWebRequest::State::State_Completed:
-		{
-			wxWebResponse response = event.GetRequest().GetResponse();
-			if (response.GetStatus() == 200 /* OK */)
-			{
-				WordHintRequest& hintRequest = this->requestHintArray[event.GetId()];
-
-				std::string jsonResponse = response.AsString().ToStdString();
-				this->CaptureWordHint(hintRequest.word, jsonResponse);
-			}
-
-			break;
-		}
-		case wxWebRequest::State::State_Failed:
-		{
-			wxString error = event.GetErrorDescription();
-			wxLogError(error);
-			break;
-		}
-		case wxWebRequest::State::State_Idle:
-		{
-			break;
-		}
-		case wxWebRequest::State::State_Unauthorized:
-		{
-			wxLogError("Unauthorized!");
-			break;
-		}
-		case wxWebRequest::State::State_Active:
-		{
-			break;
-		}
-		case wxWebRequest::State::State_Cancelled:
-		{
-			wxLogError("Canceled!");
-			break;
-		}
-	}
-}
-#endif
 
 void Puzzle::GetWorldRect(HappyMath::Rectangle& worldRect) const
 {
@@ -157,6 +77,24 @@ bool Puzzle::GetWordLocation(const HappyMath::Vector2& worldPos, CrossWord::Word
 
 	wordRect.MakeInvalid();
 	return false;
+}
+
+bool Puzzle::GetWordHint(const CrossWord::WordLocation& wordLocation, std::string& hint) const
+{
+	std::string word = this->solvedMatrix.GetWordAt(wordLocation);
+	auto pair = this->wordHintMap.find(word);
+	if (pair == this->wordHintMap.end())
+		return false;
+
+	hint = pair->second;
+	return true;
+}
+
+void Puzzle::SetWordHint(const CrossWord::WordLocation& wordLocation, const std::string& hint)
+{
+	std::string word = this->solvedMatrix.GetWordAt(wordLocation);
+	this->wordHintMap.erase(word);
+	this->wordHintMap.insert(std::pair(word, hint));
 }
 
 /*static*/ void Puzzle::LocationToRect(const CrossWord::Location& location, HappyMath::Rectangle& rect)

@@ -32,6 +32,8 @@ public:
 	void Reset();
 	bool GetWordLocation(const HappyMath::Vector2& worldPos, CrossWord::WordOrientation wordOrientation, CrossWord::WordLocation& wordLocation, HappyMath::Rectangle& wordRect) const;
 	static void LocationToRect(const CrossWord::Location& location, HappyMath::Rectangle& rect);
+	bool GetWordHint(const CrossWord::WordLocation& wordLocation, std::string& hint) const;
+	void SetWordHint(const CrossWord::WordLocation& wordLocation, const std::string& hint);
 
 	CrossWord::PuzzleMatrix userMatrix;
 	CrossWord::PuzzleMatrix solvedMatrix;

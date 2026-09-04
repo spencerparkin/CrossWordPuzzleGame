@@ -18,6 +18,7 @@ public:
 	virtual int OnExit() override;
 
 	CrossWord::WordBank* GetWordBank();
+	Frame* GetFrame();
 
 	std::shared_ptr<Puzzle> puzzle;
 

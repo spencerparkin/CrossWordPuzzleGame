@@ -1,7 +1,10 @@
 #include "Canvas.h"
 #include "App.h"
 #include "Puzzle.h"
+#include "Frame.h"
+#include "JsonValue.h"
 #include <gl/GLU.h>
+#include <wx/msgdlg.h>
 
 using namespace HappyMath;
 
@@ -9,6 +12,10 @@ int Canvas::attributeList[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, 0 };
 
 Canvas::Canvas(wxWindow* parent) : wxGLCanvas(parent, wxID_ANY, attributeList), timer(this)
 {
+	this->nextRequestId = 0;
+	this->hoverLocation = {};
+	this->selectedLocation = {};
+
 	this->context = new wxGLContext(this);
 
 	this->Bind(wxEVT_PAINT, &Canvas::OnPaint, this);
@@ -18,6 +25,7 @@ Canvas::Canvas(wxWindow* parent) : wxGLCanvas(parent, wxID_ANY, attributeList), 
 	this->Bind(wxEVT_MOUSEWHEEL, &Canvas::OnMouseWheel, this);
 	this->Bind(wxEVT_KEY_DOWN, &Canvas::OnKeyDown, this);
 	this->Bind(wxEVT_TIMER, &Canvas::OnTimer, this);
+	this->Bind(wxEVT_WEBREQUEST_STATE, &Canvas::OnWebRequestState, this);
 
 	bool fontSysInit = this->fontSystem.Initialize();
 	wxASSERT(fontSysInit);
@@ -213,6 +221,30 @@ void Canvas::OnMouseClick(wxMouseEvent& event)
 			break;
 		}
 	}
+
+	std::string hint;
+	if (puzzle->GetWordHint(this->selectedLocation, hint))
+	{
+		wxGetApp().GetFrame()->ShowWordHint(hint);
+	}
+	else
+	{
+		// See "https://freedictionaryapi.com/" for rate limit info.
+
+		std::string word = puzzle->solvedMatrix.GetWordAt(this->selectedLocation);
+		wxString url = "https://freedictionaryapi.com/api/v1/entries/en/" + word;
+		int requestId = this->nextRequestId++;
+		this->pendingWordHintMap.insert(std::pair(requestId, this->selectedLocation));
+
+		wxWebRequest request = wxWebSession::GetDefault().CreateRequest(this, url, requestId);
+		if (request.IsOk())
+		{
+			request.SetMethod("GET");
+			request.SetHeader("Accept", "application/json");
+			request.SetStorage(wxWebRequest::Storage_Memory);
+			request.Start();
+		}
+	}
 }
 
 void Canvas::OnKeyDown(wxKeyEvent& event)
@@ -259,4 +291,122 @@ void Canvas::OnKeyDown(wxKeyEvent& event)
 		if (this->letterIndex > 0)
 			this->letterIndex--;
 	}
+}
+
+void Canvas::OnWebRequestState(wxWebRequestEvent& event)
+{
+	wxWebRequest::State state = event.GetState();
+	switch (state)
+	{
+		case wxWebRequest::State::State_Completed:
+		{
+			wxWebResponse response = event.GetRequest().GetResponse();
+
+			if (response.GetStatus() == 200 /* OK */)
+			{
+				wxString content = response.AsString();
+
+				std::string jsonText = content.ToUTF8().data();
+				
+				std::string hint;
+				if (!this->ConstructWordHintFromJson(jsonText, hint))
+					hint = "Failed to read JSON response.";
+
+				int requestId = event.GetRequest().GetId();
+				auto pair = this->pendingWordHintMap.find(requestId);
+				assert(pair != this->pendingWordHintMap.end());
+				if (pair != this->pendingWordHintMap.end())
+				{
+					const CrossWord::WordLocation& wordLocation = pair->second;
+					Puzzle* puzzle = wxGetApp().puzzle.get();
+					puzzle->SetWordHint(wordLocation, hint);
+					if (this->selectedLocation == wordLocation)
+						wxGetApp().GetFrame()->ShowWordHint(hint);
+
+					this->pendingWordHintMap.erase(requestId);
+				}
+			}
+
+			break;
+		}
+		case wxWebRequest::State::State_Failed:
+		{
+			wxString error = event.GetErrorDescription();
+			wxLogError(error);
+			break;
+		}
+		case wxWebRequest::State::State_Idle:
+		{
+			break;
+		}
+		case wxWebRequest::State::State_Unauthorized:
+		{
+			wxLogError("Unauthorized!");
+			break;
+		}
+		case wxWebRequest::State::State_Active:
+		{
+			break;
+		}
+		case wxWebRequest::State::State_Cancelled:
+		{
+			wxLogError("Canceled!");
+			break;
+		}
+	}
+}
+
+bool Canvas::ConstructWordHintFromJson(const std::string& jsonText, std::string& hint)
+{
+	using namespace ParseParty;
+
+	std::string parseError;
+	std::shared_ptr<JsonValue> jsonValue = JsonValue::ParseJson(jsonText, parseError);
+
+	if (parseError.length() > 0)
+	{
+		wxMessageBox(wxString::Format("JSON parse error: %s", parseError.c_str()), "Error!", wxICON_ERROR | wxOK, wxGetApp().GetFrame());
+		return false;
+	}
+
+	if (!jsonValue.get())
+		return false;
+
+	std::shared_ptr<JsonObject> jsonRootObject = std::dynamic_pointer_cast<JsonObject>(jsonValue);
+	if (!jsonRootObject.get())
+		return false;
+
+	hint = "";
+	int defCount = 0;
+
+	try
+	{
+		std::shared_ptr<JsonArray> jsonEntriesArray = jsonRootObject->GetValueOrThrow<JsonArray>("entries");
+
+		for (int i = 0; i < (int)jsonEntriesArray->GetSize(); i++)
+		{
+			std::shared_ptr<JsonObject> jsonEntry = jsonEntriesArray->GetValueOrThrow<JsonObject>(i);
+
+			std::shared_ptr<JsonArray> jsonSensesArray = jsonEntry->GetValueOrThrow<JsonArray>("senses");
+
+			for (int j = 0; j < (int)jsonSensesArray->GetSize(); j++)
+			{
+				std::shared_ptr<JsonObject> jsonSense = jsonSensesArray->GetValueOrThrow<JsonObject>(j);
+
+				std::string def = jsonSense->GetValueOrThrow<JsonString>("definition")->GetValue();
+
+				hint += std::format("Definition #{}: {}\n", ++defCount, def.c_str());
+			}
+		}
+	}
+	catch (JsonException jsonExc)
+	{
+		wxMessageBox(wxString::Format("JSON Exception: %s", jsonExc.errorMsg.c_str()), "Error!", wxICON_ERROR | wxOK, wxGetApp().GetFrame());
+		return false;
+	}
+
+	if (hint.length() == 0)
+		hint = "No definition could be found.";
+
+	return true;
 }

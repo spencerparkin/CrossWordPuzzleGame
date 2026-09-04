@@ -46,3 +46,8 @@ CrossWord::WordBank* GameApp::GetWordBank()
 {
 	return 0;
 }
+
+Frame* GameApp::GetFrame()
+{
+	return this->frame;
+}
