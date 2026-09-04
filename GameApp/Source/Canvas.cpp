@@ -45,9 +45,9 @@ Canvas::Canvas(wxWindow* parent) : wxGLCanvas(parent, wxID_ANY, attributeList), 
 
 /*virtual*/ Canvas::~Canvas()
 {
-	delete this->context;
-
 	this->fontSystem.Finalize();
+
+	delete this->context;
 }
 
 void Canvas::OnTimer(wxTimerEvent& event)

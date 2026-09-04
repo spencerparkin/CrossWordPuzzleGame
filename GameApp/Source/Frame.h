@@ -7,7 +7,7 @@ class Canvas;
 
 enum
 {
-	ID_NewPuzzle,
+	ID_NewPuzzle = wxID_HIGHEST,
 	ID_SolvePuzzle,
 	ID_ResetPuzzle,
 	ID_Exit,
