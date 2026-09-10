@@ -1,10 +1,12 @@
 #include "Frame.h"
 #include "Canvas.h"
 #include "App.h"
+#include "ParamsDialog.h"
 #include <wx/sizer.h>
 #include <wx/menu.h>
 #include <wx/aboutdlg.h>
 #include <wx/msgdlg.h>
+#include <wx/splitter.h>
 
 Frame::Frame(const wxSize& size) : wxFrame(nullptr, wxID_ANY, "Crossword Puzzle Game", wxDefaultPosition, size)
 {
@@ -26,13 +28,16 @@ Frame::Frame(const wxSize& size) : wxFrame(nullptr, wxID_ANY, "Crossword Puzzle 
 	wxStatusBar* statusBar = new wxStatusBar(this);
 	this->SetStatusBar(statusBar);
 
-	this->canvas = new Canvas(this);
+	wxSplitterWindow* splitter = new wxSplitterWindow(this, wxID_ANY);
 
-	this->hintText = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1, 200), wxTE_READONLY | wxTE_MULTILINE);
+	this->canvas = new Canvas(splitter);
+
+	this->hintText = new wxTextCtrl(splitter, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1, 200), wxTE_READONLY | wxTE_MULTILINE);
+
+	splitter->SplitHorizontally(this->canvas, this->hintText, (size.y * 4) / 5);
 
 	wxBoxSizer* boxSizer = new wxBoxSizer(wxVERTICAL);
-	boxSizer->Add(this->canvas, 1, wxGROW | wxALL, 0);
-	boxSizer->Add(this->hintText, 0, wxGROW | wxALL, 0);
+	boxSizer->Add(splitter, 1, wxGROW | wxALL, 0);
 	this->SetSizer(boxSizer);
 
 	this->Bind(wxEVT_MENU, &Frame::OnNewPuzzle, this, ID_NewPuzzle);
@@ -53,7 +58,10 @@ void Frame::OnNewPuzzle(wxCommandEvent& event)
 	wxGetApp().puzzle = std::make_shared<Puzzle>();
 
 	Puzzle::Params params;
-	// STPTODO: Show dialog here to configure parameters.
+	ParamsDialog dialog(this, &params);
+	dialog.CenterOnParent();
+	if (dialog.ShowModal() != wxID_OK)
+		return;
 
 	if (!wxGetApp().puzzle->Regenerate(params))
 	{
